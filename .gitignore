@@ -7,3 +7,4 @@ jspm_packages
 .env
 index.js
 serverless.yml
+thumbnail.txt

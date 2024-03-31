@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const app = express();
 app.use(express.json({ limit: '2mb' }));
+
 require('dotenv').config();
 app.use(
     cors({
@@ -11,6 +12,9 @@ app.use(
             process.env.PROD_SERVER_1_URL,
             'https://mohsin-riaz.github.io',
             'https://mohsin-riaz.github.io/',
+            'http://mohsinriaz.ca',
+            'https://mohsinriaz.ca',
+            // 'http://localhost:5000',
         ],
         allowCredentials: true,
         credentials: true,

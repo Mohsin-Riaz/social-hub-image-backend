@@ -1,5 +1,5 @@
 const AWS = require('aws-sdk');
-const jimp = require('jimp');
+const jimp = require('jimp-compact');
 
 const region = process.env.AWS_S3_REGION;
 const bucketName = process.env.AWS_BUCKET_NAME;
@@ -17,18 +17,17 @@ AWS.config.update({
 
 const s3 = new AWS.S3();
 
-const postImage = async (req, res) => {
+const createAvatarImage = async (req, res) => {
     const { imageId } = req.params;
-    const { imageData, imageType } = req.body;
+    const { buffer } = req.file;
 
-    if (!imageId || !imageData)
+    if (!imageId || !buffer)
         return res.status(400).json({
             success: false,
             message: 'No image data or image id provided',
         });
 
-    const image = await imageBuffer(imageData, imageType, imageId);
-    const thumbnail = await thumbnailBuffer(imageData, imageType);
+    const image = await imageResize(buffer, 'avatar');
     var uploadImage = new AWS.S3.ManagedUpload({
         params: {
             Bucket: bucketName,
@@ -37,50 +36,90 @@ const postImage = async (req, res) => {
         },
     });
 
-    var uploadThumbnail = new AWS.S3.ManagedUpload({
+    uploadImage.promise().then(
+        () => {
+            return res.status(200).json({
+                success: true,
+                message: 'Successfully uploaded photo',
+            });
+        },
+        (err) => {
+            return res.status(400).json({
+                success: false,
+                message: 'There was an error uploading your photo',
+                error: err.message,
+            });
+        }
+    );
+};
+
+const createPostImage = async (req, res) => {
+    const { imageId } = req.params;
+    const { buffer } = req.file;
+    if (!imageId || !buffer)
+        return res.status(400).json({
+            success: false,
+            message: 'No image data or image id provided',
+        });
+
+    const image = await imageResize(buffer, 'post');
+
+    var uploadImage = new AWS.S3.ManagedUpload({
         params: {
             Bucket: bucketName,
-            Key: imageId + '-thumbnail.webp',
-            Body: thumbnail,
+            Key: imageId + '.webp',
+            Body: image,
         },
     });
-
     uploadImage.promise().then(
-        uploadThumbnail.promise().then(
-            () => {
-                return res.status(200).json({
-                    success: true,
-                    message: 'Successfully uploaded photo',
-                });
-            },
-            (err) => {
-                return res.status(400).json({
-                    success: false,
-                    message: 'There was an error uploading your photo',
-                    error: err.message,
-                });
-            }
-        )
+        () => {
+            return res.status(200).json({
+                success: true,
+                message: 'Successfully uploaded photo',
+            });
+        },
+        (err) => {
+            return res.status(400).json({
+                success: false,
+                message: 'There was an error uploading your photo',
+                error: err.message,
+            });
+        }
     );
+};
+
+const imageResize = async (buffer, imageType) => {
+    var width = 900;
+    var height = 600;
+    if (imageType === 'avatar') {
+        var width = 300;
+        var height = 300;
+    }
+    return jimp
+        .read(buffer)
+        .then((image) =>
+            image
+                .contain(width, height)
+                .background(0x1e1e1eff)
+                .getBufferAsync(jimp.AUTO)
+        );
 };
 
 const deleteImage = async (req, res) => {
     const { imageId } = req.params;
-
     if (!imageId)
         return res
             .status(404)
             .json({ success: true, message: 'No image id provided' });
 
     var photoKey = imageId + '.webp';
-    var thumbnailKey = imageId + '-thumbnail.webp';
 
     s3.deleteObjects(
         {
             Bucket: bucketName,
-            Delete: { Objects: [{ Key: thumbnailKey }, { Key: photoKey }] },
+            Delete: { Objects: [{ Key: photoKey }] },
         },
-        (err, data) => {
+        (err, _) => {
             if (err) {
                 return res.status(400).json({
                     success: false,
@@ -96,54 +135,4 @@ const deleteImage = async (req, res) => {
     );
 };
 
-const imageBuffer = async (imageData, imageType) => {
-    const image = imageData.split(';base64,').pop();
-    const buffer = Buffer.from(image, 'base64');
-    if (imageType?.toLowerCase() === 'post') {
-        return jimp
-            .read(buffer)
-            .then((image) =>
-                image
-                    .resize(900, 600)
-                    .cover(900, 600)
-                    .background(0x1e1e1eff)
-                    .getBufferAsync(jimp.AUTO)
-            );
-    }
-    return jimp
-        .read(buffer)
-        .then((image) =>
-            image
-                .resize(350, 233)
-                .cover(350, 233)
-                .background(0x1e1e1eff)
-                .getBufferAsync(jimp.AUTO)
-        );
-};
-
-const thumbnailBuffer = async (imageData, imageType) => {
-    const image = imageData.split(';base64,').pop();
-    const buffer = Buffer.from(image, 'base64');
-    if (imageType?.toLowerCase() === 'post') {
-        return jimp
-            .read(buffer)
-            .then((image) =>
-                image
-                    .resize(150, 100)
-                    .cover(150, 100)
-                    .background(0x1e1e1eff)
-                    .getBufferAsync(jimp.AUTO)
-            );
-    }
-    return jimp
-        .read(buffer)
-        .then((image) =>
-            image
-                .resize(50, 33)
-                .cover(50, 33)
-                .background(0x1e1e1eff)
-                .getBufferAsync(jimp.AUTO)
-        );
-};
-
-module.exports = { postImage, deleteImage };
+module.exports = { createPostImage, createAvatarImage, deleteImage };

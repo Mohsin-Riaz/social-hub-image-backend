@@ -1,7 +1,14 @@
 const express = require('express');
 const router = express.Router();
-const { postImage, deleteImage } = require('../controllers/imageController');
+const multer = require('multer');
+const upload = multer();
+const {
+    createAvatarImage,
+    deleteImage,
+    createPostImage,
+} = require('../controllers/imageController');
 
-router.route('/:imageId').post(postImage).delete(deleteImage);
-
+router.route('/a/:imageId').post(upload.single('avatar'), createAvatarImage);
+router.route('/p/:imageId').post(upload.single('avatar'), createPostImage);
+router.route('/d/:imageId').delete(deleteImage);
 module.exports = router;
