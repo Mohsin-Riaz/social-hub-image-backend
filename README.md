@@ -12,8 +12,21 @@ Made with expressJS. Connects to aws s3 for image post and delete.
 
 Provide Image ID (imageId) with each request
 
-GET POST PATCH DELETE
-example-domain.com/images/:imageId
+#### POST
+
+##### Create Avavtar Image
+
+example-domain.com/images/a/:imageId
+
+##### Create Post Image
+
+example-domain.com/images/p/:imageId
+
+#### DELETE
+
+##### Delete by id
+
+example-domain.com/images/d/:imageId
 
 <!--
 title: 'Serverless Framework Node Express API on AWS'
