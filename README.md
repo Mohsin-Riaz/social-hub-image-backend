@@ -17,25 +17,6 @@ Supports avatar and post images with automatic resizing using [Jimp](https://www
 
 ---
 
-## 📂 Project Structure
-```
-
-├── .gitignore
-├── README.md
-├── package-lock.json
-├── package.json
-├── server.js
-└── src
-├── controllers
-│ └── imageController.js
-├── routes
-│ └── imageRoutes.js
-└── server.js
-
-````
-
----
-
 ## ⚙️ Installation
 
 ```bash
